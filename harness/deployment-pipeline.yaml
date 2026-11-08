@@ -1,0 +1,30 @@
+# DRAFT: configure/export this pipeline from Harness Pipeline Studio; not guaranteed import-ready.
+
+pipeline:
+  name: AWS-DevSecOps-CD
+  identifier: AWS_DevSecOps_CD
+  projectIdentifier: DevSecOps
+  orgIdentifier: default
+  stages:
+    - stage:
+        name: Deploy to EKS
+        identifier: Deploy_to_EKS
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: devsecops_app
+          environment:
+            environmentRef: dev_environment
+            infrastructureDefinitions:
+              - identifier: eks_infrastructure
+          execution:
+            steps:
+              - step:
+                  name: Helm Deployment
+                  identifier: Helm_Deployment
+                  type: HelmDeploy
+                  timeout: 10m
+                  spec:
+                    skipDryRun: false
+            rollbackSteps: []
