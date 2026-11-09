@@ -1,12 +1,16 @@
 replicaCount: 2
+
 image:
-  repository: REPLACE_WITH_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/aws-devsecops-app
-  tag: latest
+  repository: 441931764817.dkr.ecr.ap-south-1.amazonaws.com/aws-devsecops-app
+  tag: "7"
   pullPolicy: IfNotPresent
+
 service:
   type: ClusterIP
   port: 5000
+
 containerPort: 5000
+
 resources:
   requests:
     cpu: 100m
