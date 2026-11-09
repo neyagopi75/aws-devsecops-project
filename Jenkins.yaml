@@ -1,6 +1,12 @@
+
 pipeline {
   agent any
-  options { timestamps(); disableConcurrentBuilds() }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
   environment {
     AWS_REGION = 'ap-south-1'
     AWS_ACCOUNT_ID = '441931764817'
@@ -8,48 +14,97 @@ pipeline {
     IMAGE_NAME = 'aws-devsecops-app'
     SNYK_TOKEN = credentials('snyk-token')
   }
+
   stages {
-    stage('Checkout') { steps { checkout scm } }
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
     stage('Python Build and Test') {
-      steps { sh '''
-        python3 -m venv .venv
-        . .venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install -r src/requirements.txt
-        python -m py_compile src/app.py
-      ''' }
+      steps {
+        sh '''
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+          python -m py_compile src/app.py
+        '''
+      }
     }
+
     stage('Terraform Validation') {
-      steps { dir('terraform') { sh '''
-        terraform fmt -check -recursive
-        terraform init -backend=false
-        terraform validate
-      ''' } }
+      steps {
+        dir('terraform') {
+          sh '''
+            terraform fmt -check -recursive
+            terraform init -backend=false
+            terraform validate
+          '''
+        }
+      }
     }
+
     stage('Snyk Security Scan') {
-      steps { sh '''
-        snyk auth "$SNYK_TOKEN"
-        snyk iac test --severity-threshold=medium terraform/
-        snyk test --file=src/requirements.txt
-      ''' }
+      steps {
+        sh '''
+          snyk auth "$SNYK_TOKEN"
+          snyk iac test --severity-threshold=medium terraform/
+
+          . .venv/bin/activate
+          python --version
+          python -m pip --version
+
+          snyk test --file=src/requirements.txt --package-manager=pip --command=python
+        '''
+      }
     }
-    stage('Docker Build') { steps { sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER src/' } }
+
+    stage('Docker Build') {
+      steps {
+        sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER src/'
+      }
+    }
+
     stage('Push to ECR') {
-      steps { sh '''
-        set -eu
-        test "$AWS_ACCOUNT_ID" != "REPLACE_WITH_12_DIGIT_ACCOUNT_ID"
-        ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-        aws sts get-caller-identity
-        aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION" >/dev/null
-        aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_NUMBER"
-        docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_NUMBER"
-      ''' }
+      steps {
+        sh '''
+          set -eu
+
+          test "$AWS_ACCOUNT_ID" != "REPLACE_WITH_12_DIGIT_ACCOUNT_ID"
+
+          ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+          aws sts get-caller-identity
+
+          aws ecr describe-repositories \
+            --repository-names "$ECR_REPOSITORY" \
+            --region "$AWS_REGION" >/dev/null
+
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+          docker tag "$IMAGE_NAME:$BUILD_NUMBER" \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_NUMBER"
+
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_NUMBER"
+        '''
+      }
     }
   }
+
   post {
-    always { echo 'Build finished. Review stage logs and scan results.' }
-    success { echo 'CI and ECR push completed successfully.' }
-    failure { echo 'Pipeline failed. Check Jenkins console output.' }
+    always {
+      echo 'Build finished. Review stage logs and scan results.'
+    }
+
+    success {
+      echo 'CI and ECR push completed successfully.'
+    }
+
+    failure {
+      echo 'Pipeline failed. Check Jenkins console output.'
+    }
   }
 }
