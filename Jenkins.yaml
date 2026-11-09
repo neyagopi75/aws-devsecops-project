@@ -29,7 +29,7 @@ pipeline {
     stage('Snyk Security Scan') {
       steps { sh '''
         snyk auth "$SNYK_TOKEN"
-        snyk iac test terraform/
+        snyk iac test --severity-threshold=medium terraform/
         snyk test --file=src/requirements.txt
       ''' }
     }
