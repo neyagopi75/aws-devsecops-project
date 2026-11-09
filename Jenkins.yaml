@@ -3,7 +3,7 @@ pipeline {
   options { timestamps(); disableConcurrentBuilds() }
   environment {
     AWS_REGION = 'ap-south-1'
-    AWS_ACCOUNT_ID = 'REPLACE_WITH_12_DIGIT_ACCOUNT_ID'
+    AWS_ACCOUNT_ID = '441931764817'
     ECR_REPOSITORY = 'aws-devsecops-app'
     IMAGE_NAME = 'aws-devsecops-app'
     SNYK_TOKEN = credentials('snyk-token')

@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "devsecops" {
   bucket = var.bucket_name
-  tags = { Name = "devsecops-example", Environment = "learning" }
+  tags   = { Name = "devsecops-example", Environment = "learning" }
 }
 resource "aws_s3_bucket_public_access_block" "devsecops" {
   bucket                  = aws_s3_bucket.devsecops.id
