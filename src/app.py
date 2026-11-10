@@ -1,6 +1,18 @@
+
 from flask import Flask
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
+
+# Enable Prometheus metrics endpoint
+metrics = PrometheusMetrics(app)
+
+# Application information
+metrics.info(
+    "app_info",
+    "AWS DevSecOps application information",
+    version="1.0.0"
+)
 
 @app.get("/")
 def hello():
