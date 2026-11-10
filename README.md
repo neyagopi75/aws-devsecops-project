@@ -4,45 +4,6 @@ An end-to-end DevSecOps project that builds, scans, publishes, and deploys a con
 
 > **Deployment approach:** Jenkins handles CI and CD. Harness is not part of this architecture. Helm is retained as the Kubernetes deployment tool. Vault is not included because a Vault runtime integration has not been implemented.
 
----
-
-flowchart TD
-    Dev[Developer] -->|git push| GitHub[GitHub Repository]
-    GitHub -->|Checkout| Jenkins[Jenkins on EC2]
-
-    subgraph CI["Continuous Integration - Jenkins"]
-      Checkout[Checkout source]
-      Test[Build and test application]
-      TF[Terraform validation]
-      Scan[Snyk security scan]
-      Build[Build Docker image]
-      Push[Push image to ECR]
-      Checkout --> Test --> TF --> Scan --> Build --> Push
-    end
-
-    Jenkins --> Checkout
-    Push --> ECR["Amazon ECR<br/>aws-devsecops-app:tag"]
-
-    subgraph CD["Continuous Deployment - Jenkins"]
-      Helm["Helm upgrade / install"]
-      Verify[Verify rollout]
-      Helm --> Verify
-    end
-
-    Jenkins -->|Helm + kubectl| Helm
-    Helm -->|Deploy| EKS[Amazon EKS]
-    ECR -->|Image pulled by EKS nodes| EKS
-
-    subgraph K8S["EKS Kubernetes Cluster"]
-      Deploy[Deployment]
-      Pods[Application Pods]
-      Svc[ClusterIP Service]
-      Deploy --> Pods --> Svc
-    end
-
-    EKS --> Deploy
-
-```
 
 ### Architecture flow
 
