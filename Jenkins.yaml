@@ -55,6 +55,7 @@ pipeline {
       steps {
         sh '''
           snyk auth "$SNYK_TOKEN"
+
           snyk iac test --severity-threshold=medium terraform/
 
           . .venv/bin/activate
@@ -68,7 +69,9 @@ pipeline {
 
     stage('Docker Build') {
       steps {
-        sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER src/'
+        sh '''
+          docker build -t "$IMAGE_NAME:$BUILD_NUMBER" src/
+        '''
       }
     }
 
@@ -127,8 +130,7 @@ pipeline {
         sh '''
           set -eu
 
-          kubectl rollout status deployment \
-            -l app.kubernetes.io/instance="$HELM_RELEASE" \
+          kubectl rollout status deployment/"$HELM_RELEASE" \
             -n "$K8S_NAMESPACE" \
             --timeout=180s
 
