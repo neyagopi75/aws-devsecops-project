@@ -12,6 +12,11 @@ pipeline {
     AWS_ACCOUNT_ID = '441931764817'
     ECR_REPOSITORY = 'aws-devsecops-app'
     IMAGE_NAME = 'aws-devsecops-app'
+
+    EKS_CLUSTER_NAME = 'aws-devsecops-eks'
+    K8S_NAMESPACE = 'devsecops'
+    HELM_RELEASE = 'aws-devsecops-app'
+
     SNYK_TOKEN = credentials('snyk-token')
   }
 
@@ -72,8 +77,6 @@ pipeline {
         sh '''
           set -eu
 
-          test "$AWS_ACCOUNT_ID" != "REPLACE_WITH_12_DIGIT_ACCOUNT_ID"
-
           ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
           aws sts get-caller-identity
@@ -92,6 +95,48 @@ pipeline {
         '''
       }
     }
+
+    stage('Deploy to EKS using Helm') {
+      steps {
+        sh '''
+          set -eu
+
+          command -v aws
+          command -v kubectl
+          command -v helm
+
+          aws eks update-kubeconfig \
+            --name "$EKS_CLUSTER_NAME" \
+            --region "$AWS_REGION"
+
+          kubectl get nodes
+
+          helm upgrade --install "$HELM_RELEASE" ./helm \
+            --namespace "$K8S_NAMESPACE" \
+            --create-namespace \
+            --set image.repository="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY" \
+            --set image.tag="$BUILD_NUMBER"
+
+          kubectl get deployments -n "$K8S_NAMESPACE"
+        '''
+      }
+    }
+
+    stage('Verify EKS Rollout') {
+      steps {
+        sh '''
+          set -eu
+
+          kubectl rollout status deployment \
+            -l app.kubernetes.io/instance="$HELM_RELEASE" \
+            -n "$K8S_NAMESPACE" \
+            --timeout=180s
+
+          kubectl get pods -n "$K8S_NAMESPACE"
+          kubectl get services -n "$K8S_NAMESPACE"
+        '''
+      }
+    }
   }
 
   post {
@@ -100,7 +145,7 @@ pipeline {
     }
 
     success {
-      echo 'CI and ECR push completed successfully.'
+      echo 'CI, ECR push, and EKS deployment completed successfully.'
     }
 
     failure {
