@@ -1,17 +1,13 @@
-
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
 scrape_configs:
-
-  # Monitor Prometheus itself
   - job_name: "prometheus"
     static_configs:
       - targets:
           - "localhost:9090"
 
-  # Monitor our Flask application
   - job_name: "aws-devsecops-app"
     metrics_path: /metrics
     scrape_interval: 15s
