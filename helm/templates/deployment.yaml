@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,6 +20,7 @@ spec:
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
+
       containers:
         - name: hello-world
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -31,13 +33,24 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
           readinessProbe:
             httpGet:
               path: /health
               port: http
+
           livenessProbe:
             httpGet:
               path: /health
               port: http
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
