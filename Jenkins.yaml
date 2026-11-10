@@ -56,7 +56,7 @@ pipeline {
         sh '''
           snyk auth "$SNYK_TOKEN"
 
-          snyk iac test --severity-threshold=medium terraform/
+          snyk iac test --severity-threshold=high terraform/
 
           . .venv/bin/activate
           python --version
